@@ -20,7 +20,7 @@ This script will:
 1) Open a new Powershell terminal
 
 2) Clone this ripository: 
-git clone https://github.com/<YourRepo>/FirewallLogs.git
+git clone https://github.com/ZeMaher/FirewllLogs.git
 
 3) Copy the FirewallLogs folder into your PowerShell Module path. 
 To know the path you can run this commands:
