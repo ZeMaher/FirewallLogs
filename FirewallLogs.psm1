@@ -56,3 +56,32 @@ function Get-FirewallLog {
 }
 
 Export-ModuleMember -Function Get-FirewallLog
+
+function Find-FirewallLog {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Path,
+        [string]$SourceIP,
+        [string]$DestinationIP,
+        [int]$DestinationPort,
+        [string]$User,
+        [string]$RuleName
+    )
+
+    # rest of code
+
+}
+
+Export-ModuleMember -Function Find-FirewallLog
+
+function Resolve-FirewallDestination {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+
+    # rest of code
+    
+}
+
+Export-ModuleMember -Function Resolve-FirewallDestination
