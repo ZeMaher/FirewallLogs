@@ -1,3 +1,4 @@
+
 function Get-FirewallLog {
     param (
         [Parameter(Mandatory=$true)]
@@ -55,4 +56,102 @@ function Get-FirewallLog {
     }
 }
 
-Export-ModuleMember -Function Get-FirewallLog
+function Find-FirewallLog {
+    [CmdletBinding()]   # enables -Verbose support
+    param (
+        [Parameter(Mandatory=$true)]
+        [Alias("P")]
+        [string]$Path,
+
+        [Alias("Src")]
+        [string]$SourceIP,
+
+        [Alias("Dst")]
+        [string]$DestinationIP,
+
+        [Alias("Port")]
+        [int]$DestinationPort,
+
+        [Alias("U")]
+        [string]$User,
+
+        [Alias("Rule")]
+        [string]$RuleName
+    )
+
+    Write-Verbose "hecking if log file exists..."
+    if (-not (Test-Path $Path)) {
+        Write-Error "Log file not found: $Path"
+        return
+    }
+
+    Write-Verbose "Parsing log entries..."
+    
+    #Loader start
+    $lines = Get-Content $Path
+    $total = $lines.Count
+    $i = 0
+
+    $entries = foreach ($line in $lines) {
+        $i++
+        $percent = [math]::Round(($i / $total) * 100)
+        Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
+
+        $prefixPattern = '^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
+        $prefixMatch = [regex]::Match($line, $prefixPattern)
+
+        $entry = [ordered]@{
+            Date   = $prefixMatch.Groups['Date'].Value
+            Time   = $prefixMatch.Groups['Time'].Value
+            Device = $prefixMatch.Groups['Device'].Value
+        }
+
+        $kvPattern = '(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
+        foreach ($match in [regex]::Matches($line, $kvPattern)) {
+            $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
+        }
+
+
+
+        [PSCustomObject]$entry
+    }
+
+    # Only apply filtering if at least one filter parameter is provided
+     Write-Verbose "Applying filters..."
+    $results = $entries
+
+    #Loader end
+    Write-Progress -Activity "Fetching firewall logs..." -Completed
+
+
+
+if ($SourceIP) {
+    $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
+}
+if ($DestinationIP) {
+    $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
+}
+if ($DestinationPort) {
+    $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
+}
+if ($User) {
+    $results = $results | Where-Object { $_.user -eq $User }
+}
+if ($RuleName) {
+    $results = $results | Where-Object { $_.rule -eq $RuleName }
+}
+
+$results
+
+
+    Write-Verbose "Checking results..."
+    if (-not $results -or $results.Count -eq 0) {
+        Write-Host "No matching firewall log entries found for the specified filters." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "$($results.Count) matching firewall log entries found." -ForegroundColor Green
+    
+}
+
+Export-ModuleMember -Function Get-FirewallLog, Find-FirewallLog
