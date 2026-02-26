@@ -56,7 +56,7 @@ function Get-FirewallLog {
     }
 }
 
-<<<<<<< HEAD
+
 function Find-FirewallLog {
     [CmdletBinding()]   # enables -Verbose support
     param (
@@ -156,25 +156,6 @@ $results
 }
 
 Export-ModuleMember -Function Get-FirewallLog, Find-FirewallLog
-=======
-Export-ModuleMember -Function Get-FirewallLog
-
-function Find-FirewallLog {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$Path,
-        [string]$SourceIP,
-        [string]$DestinationIP,
-        [int]$DestinationPort,
-        [string]$User,
-        [string]$RuleName
-    )
-
-    # rest of code
-
-}
-
-Export-ModuleMember -Function Find-FirewallLog
 
 function Resolve-FirewallDestination {
     param (
@@ -187,4 +168,3 @@ function Resolve-FirewallDestination {
 }
 
 Export-ModuleMember -Function Resolve-FirewallDestination
->>>>>>> origin/main
