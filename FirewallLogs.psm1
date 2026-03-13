@@ -158,12 +158,26 @@ $results
 Export-ModuleMember -Function Get-FirewallLog, Find-FirewallLog
 
 function Resolve-FirewallDestination {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [string]$Path
+        [Alias("FW")]
+        [string]$FirewallLogPath,
+
+        [Parameter(Mandatory=$true)]
+        [Alias("DNS")]
+        [string]$PiHoleLogPath
     )
 
-    # rest of code
+    if (-not (Test-Path $FirewallLogPath)) {
+        Write-Error "Firewall log file not found: $FirewallLogPath"
+        return
+    }
+
+    if (-not (Test-Path $PiHoleLogPath)) {
+        Write-Error "PiHole log file not found: $PiHoleLogPath"
+        return
+    }
     
 }
 
