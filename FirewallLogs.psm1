@@ -126,23 +126,23 @@ function Find-FirewallLog {
 
 
 
-if ($SourceIP) {
-    $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
-}
-if ($DestinationIP) {
-    $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
-}
-if ($DestinationPort) {
-    $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
-}
-if ($User) {
-    $results = $results | Where-Object { $_.user -eq $User }
-}
-if ($RuleName) {
-    $results = $results | Where-Object { $_.rule -eq $RuleName }
-}
-
-$results
+    if ($SourceIP) {
+        $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
+    }
+    if ($DestinationIP) {
+        $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
+    }
+    if ($DestinationPort) {
+        $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
+    }
+    if ($User) {
+        $results = $results | Where-Object { $_.user -eq $User }
+    }
+    if ($RuleName) {
+        $results = $results | Where-Object { $_.rule -eq $RuleName }
+    }
+    
+    $results
 
 
     Write-Verbose "Checking results..."
