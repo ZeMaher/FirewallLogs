@@ -178,6 +178,64 @@ function Resolve-FirewallDestination {
         Write-Error "PiHole log file not found: $PiHoleLogPath"
         return
     }
+
+    $dnsTable = @{}
+
+    Get-Content $PiHoleLogPath | ForEach-Object {
+
+        $line = $_
+
+        if ($line -match 'reply\s+(?<Domain>\S+)\s+is\s+(?<IP>\d+\.\d+\.\d+\.\d+)') {
+
+            $ip = $Matches.IP
+            $domain = $Matches.Domain
+
+            if (-not $dnsTable.ContainsKey($ip)) {
+                $dnsTable[$ip] = $domain
+            }
+        }
+
+        elseif ($line -match 'cached\s+(?<Domain>\S+)\s+is\s+(?<IP>\d+\.\d+\.\d+\.\d+)') {
+
+            $ip = $Matches.IP
+            $domain = $Matches.Domain
+
+            if (-not $dnsTable.ContainsKey($ip)) {
+                $dnsTable[$ip] = $domain
+            }
+        }
+    }
+
+    $lines = Get-Content $FirewallLogPath
+
+    foreach ($line in $lines) {
+
+        $prefixPattern = '^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
+        $prefixMatch = [regex]::Match($line, $prefixPattern)
+
+        $entry = [ordered]@{
+            Date   = $prefixMatch.Groups['Date'].Value
+            Time   = $prefixMatch.Groups['Time'].Value
+            Device = $prefixMatch.Groups['Device'].Value
+        }
+
+        $kvPattern = '(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
+        foreach ($match in [regex]::Matches($line, $kvPattern)) {
+            $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
+        }
+
+        $dstIP = $entry.dst_ip
+        $domain = $null
+
+        if ($dstIP -and $dnsTable.ContainsKey($dstIP)) {
+            $domain = $dnsTable[$dstIP]
+        }
+
+        [PSCustomObject]@{
+            DestIP     = $dstIP
+            Domain     = $domain
+        }
+    }
     
 }
 
