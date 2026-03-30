@@ -8,7 +8,7 @@ function Get-FirewallLog {
         # Path to the specified firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
-        [string]$Path,
+        [string]$FirewallLogPath,
 
         # When this switch is used, all parsed fields from the firewall log entries
         # will be returned instead of specified ones.
@@ -17,13 +17,13 @@ function Get-FirewallLog {
     )
 
     # Verify that the specified log file exists in your system before attempting to read it.
-    if (-not (Test-Path $Path)) {
-        Write-Error "Log file not found: $Path"
+    if (-not (Test-Path $FirewallLogPath)) {
+        Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
     # Read the firewall log file line-by-line and parse each entry
-    Get-Content $Path | ForEach-Object {
+    Get-Content $FirewallLogPath | ForEach-Object {
         $line = $_
 
         # Extract the fixed prefix of each log entry
@@ -51,13 +51,15 @@ function Get-FirewallLog {
             # Show everything
             [PSCustomObject]$entry
         }
+        
         else {
             # Show only minimal fields
             [PSCustomObject]@{
                 Date        = $entry.Date
                 Time        = $entry.Time
                 Device      = $entry.Device
-                Action      = $entry.log_subtype
+                RuleName    = $entry.fw_rule_name
+                User        = $entry.user_name
                 SrcIP       = $entry.src_ip
                 SrcPort     = $entry.src_port
                 DstIP       = $entry.dst_ip
@@ -67,6 +69,7 @@ function Get-FirewallLog {
         }
 
         '--------------------------------' # spacer line
+        Write-Host ""
     }
 }
 
@@ -80,7 +83,7 @@ function Find-FirewallLog {
         # Path to the specified log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
-        [string]$Path,
+        [string]$FirewallLogPath,
 
         # Filter results by source IP address
         [Alias("Src")]
@@ -107,15 +110,15 @@ function Find-FirewallLog {
     # Verify that the specified log file exists
     Write-Verbose "Checking if log file exists..."
     
-    if (-not (Test-Path $Path)) {
-        Write-Error "Log file not found: $Path"
+    if (-not (Test-Path $FirewallLogPath)) {
+        Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
     Write-Verbose "Parsing log entries..."
     
     # Loader start
-    $lines = Get-Content $Path
+    $lines = Get-Content $FirewallLogPath
     $total = $lines.Count
     $i = 0
 
@@ -206,24 +209,24 @@ function Resolve-FirewallDestination {
     param (
         # Path to the specified specified firewall log file
         [Parameter(Mandatory=$true)]
-        [Alias("FW")]
+        [Alias("P")]
         [string]$FirewallLogPath,
 
         # Path to the specified Pi-hole log file
         [Parameter(Mandatory=$true)]
         [Alias("DNS")]
-        [string]$PiHoleLogPath
+        [string]$PiholeLogPath
     )
 
     # This 'if' statement checks whether the specified firewall log file exists in your system or not.
     if (-not (Test-Path $FirewallLogPath)) {
-        Write-Error "Firewall log file not found: $FirewallLogPath"
+        Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
     # This 'if' statement checks whether the specified Pi-hole log file exists in your system or not.
-    if (-not (Test-Path $PiHoleLogPath)) {
-        Write-Error "PiHole log file not found: $PiHoleLogPath"
+    if (-not (Test-Path $PiholeLogPath)) {
+        Write-Error "This Pihole log file is not found : $PiholeLogPath"
         return
     }
 
@@ -231,7 +234,7 @@ function Resolve-FirewallDestination {
     $dnsTable = @{}
 
     # Read and parse the contents of the specified Pi-hole log file
-    Get-Content $PiHoleLogPath | ForEach-Object {
+    Get-Content $PiholeLogPath | ForEach-Object {
 
         $line = $_
 
