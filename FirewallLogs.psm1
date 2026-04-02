@@ -5,76 +5,252 @@
 # ---------------------------- #
 function Get-FirewallLog {
     param (
-        # Path to the specified firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
 
-        # When this switch is used, all parsed fields from the firewall log entries
-        # will be returned instead of specified ones.
         [Alias("F")]
-        [switch]$Full
+        [switch]$Full,
+
+        # Limits the number of entries displayed (default: all)
+        [Alias("L")]
+        [int]$Limit = 0
     )
 
-    # Verify that the specified log file exists in your system before attempting to read it.
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
-    # Read the firewall log file line-by-line and parse each entry
-    Get-Content $FirewallLogPath | ForEach-Object {
-        $line = $_
+    # Read all lines at once — much faster than Get-Content for large files
+    $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
+    $total = $lines.Count
+    $i = 0
 
-        # Extract the fixed prefix of each log entry
-        # Format : Date Time Device [info]
-        $prefixPattern = '^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
-        $prefixMatch = [regex]::Match($line, $prefixPattern)
+    # Pre-compile regex patterns for performance
+    $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
+    $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-        # Creation of an ordered hashtable so that properties appear
-        # in order when they are converted to Powershell objects
+    # Collect all parsed entries first
+    $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+    foreach ($line in $lines) {
+        $i++
+
+        # Calculate the percentage of the progress
+        $percent = [math]::Round(($i / $total) * 100)
+        # Display the progress of fetching and parsing the log entries in the firewall log file
+        Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
+
+        $prefixMatch = $prefixRegex.Match($line)
+
+        # Skip lines that don't match the expected format
+        if (-not $prefixMatch.Success) { continue }
+
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
             Time   = $prefixMatch.Groups['Time'].Value
             Device = $prefixMatch.Groups['Device'].Value
         }
 
-        # Extract all key=value pairs contained in the log entries
-        $kvPattern = '(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
-        
-        # Iteration through each key=value match found in each line
-        foreach ($match in [regex]::Matches($line, $kvPattern)) {
+        foreach ($match in $kvRegex.Matches($line)) {
             $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
         }
 
         if ($Full) {
-            # Show everything
-            [PSCustomObject]$entry
+            $entries.Add([PSCustomObject]$entry)
         }
-        
         else {
-            # Show only minimal fields
-            [PSCustomObject]@{
-                Date        = $entry.Date
-                Time        = $entry.Time
-                Device      = $entry.Device
-                RuleName    = $entry.fw_rule_name
-                User        = $entry.user_name
-                SrcIP       = $entry.src_ip
-                SrcPort     = $entry.src_port
-                DstIP       = $entry.dst_ip
-                DstPort     = $entry.dst_Port
-                Protocol    = $entry.Protocol
+            $entries.Add([PSCustomObject]@{
+                Date     = $entry.Date
+                Time     = $entry.Time
+                Device   = $entry.Device
+                Action   = $entry.log_subtype
+                RuleName = $entry.fw_rule_name
+                User     = $entry.user_name
+                SrcIP    = $entry.src_ip
+                SrcPort  = $entry.src_port
+                DstIP    = $entry.dst_ip
+                DstPort  = $entry.dst_Port
+                Protocol = $entry.Protocol
+            })
+        }
+
+        # Stop parsing once we hit the limit — no point parsing the rest
+        if ($Limit -gt 0 -and $entries.Count -ge $Limit) { break }
+    }
+
+    # Dismiss the progress bar before printing
+    Write-Progress -Activity "Fetching firewall logs..." -Completed
+
+    Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
+
+    # Find the longest property name for alignment (calculated once)
+    $maxLen = ($entries[0].PSObject.Properties.Name | Measure-Object -Property Length -Maximum).Maximum
+    $separator = "  $('─' * ($maxLen + 20))"
+
+    # Display all entries
+    foreach ($result in $entries) {
+        foreach ($prop in $result.PSObject.Properties) {
+            $label = $prop.Name.PadRight($maxLen)
+            Write-Host "  $label  " -ForegroundColor Cyan -NoNewline
+            Write-Host ": " -ForegroundColor DarkGray -NoNewline
+            Write-Host "$($prop.Value)" -ForegroundColor White
+        }
+        Write-Host $separator -ForegroundColor DarkGray
+    }
+}
+
+# --------------------------------- #
+# Function 2 : Get-FirewallLogTable #
+# --------------------------------- #
+
+function Get-FirewallLogTable {
+    param (
+        [Parameter(Mandatory=$true)]
+        [Alias("P")]
+        [string]$FirewallLogPath,
+
+        # Limits the number of entries displayed (default: 200)
+        [Alias("L")]
+        [int]$Limit = 200,
+
+        # When this switch is used, results are displayed in a GridView window
+        # instead of being printed in the console as a table
+        [Alias("G")]
+        [switch]$GridView
+    )
+
+    if (-not (Test-Path $FirewallLogPath)) {
+        Write-Error "This firewall log file is not found : $FirewallLogPath"
+        return
+    }
+
+
+    $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
+    $total = $lines.Count
+    $i = 0
+
+    $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
+    $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
+
+    $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+    foreach ($line in $lines) {
+        $i++
+        $percent = [math]::Round(($i / $total) * 100)
+        Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
+
+        $prefixMatch = $prefixRegex.Match($line)
+        if (-not $prefixMatch.Success) { continue }
+
+        $entry = [ordered]@{
+            Date   = $prefixMatch.Groups['Date'].Value
+            Time   = $prefixMatch.Groups['Time'].Value
+            Device = $prefixMatch.Groups['Device'].Value
+        }
+
+        foreach ($match in $kvRegex.Matches($line)) {
+            $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
+        }
+
+        $entries.Add([PSCustomObject]@{
+            Time      = $entry.Time
+            Action    = $entry.log_subtype
+            User      = $entry.user_name
+            RuleName  = $entry.fw_rule_name
+            SrcIP     = $entry.src_ip
+            SrcPort   = $entry.src_port
+            DstIP     = $entry.dst_ip
+            DstPort   = $entry.dst_port
+            Proto     = $entry.protocol
+            App       = $entry.app_name
+            SrcZone   = $entry.src_zone
+            DstZone   = $entry.dst_zone
+            SrcCtry   = $entry.src_country
+            DstCtry   = $entry.dst_country
+            BytesSent = $entry.bytes_sent
+            BytesRecv = $entry.bytes_received
+        })
+
+        # Stop parsing once we hit the limit — no point parsing the rest
+        if ($entries.Count -ge $Limit) { break }
+    }
+
+    Write-Progress -Activity "Fetching firewall logs..." -Completed
+
+    Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
+
+    if ($GridView) {
+        # Display results in a separate GridView window
+        $entries | Out-GridView -Title "Get-FirewallLogTable — $FirewallLogPath ($($entries.Count) of $total entries)"
+    }
+    else {
+        # Display results as a colored console table
+
+        # Column definitions : header, field name, width
+        $columns = @(
+            @{ H = "Time";      F = "Time";      W = 10 }
+            @{ H = "Action";    F = "Action";    W = 9  }
+            @{ H = "User";      F = "User";      W = 14 }
+            @{ H = "Rule";      F = "RuleName";  W = 20 }
+            @{ H = "Src IP";    F = "SrcIP";     W = 16 }
+            @{ H = "Src Pt";    F = "SrcPort";   W = 7  }
+            @{ H = "Dst IP";    F = "DstIP";     W = 16 }
+            @{ H = "Dst Pt";    F = "DstPort";   W = 7  }
+            @{ H = "Proto";     F = "Proto";     W = 6  }
+            @{ H = "App";       F = "App";       W = 22 }
+            @{ H = "SrcZone";   F = "SrcZone";   W = 10 }
+            @{ H = "DstZone";   F = "DstZone";   W = 8  }
+            @{ H = "SrcCtry";   F = "SrcCtry";   W = 8  }
+            @{ H = "DstCtry";   F = "DstCtry";   W = 8  }
+            @{ H = "BytesSent"; F = "BytesSent"; W = 10 }
+            @{ H = "BytesRecv"; F = "BytesRecv"; W = 10 }
+        )
+
+        $header    = ""
+        $separator = ""
+        foreach ($col in $columns) {
+            $header    += $col.H.PadRight($col.W)
+            $separator += ('─' * ($col.W - 1)) + ' '
+        }
+
+        function Get-ActionColor($action) {
+            switch ($action) {
+                "Allowed" { return "Green" }
+                "Denied"  { return "Red"   }
+                "Drop"    { return "Red"   }
+                default   { return "White" }
             }
         }
 
-        '--------------------------------' # spacer line
+        function Limit-String($str, $width) {
+            if ($str.Length -gt ($width - 1)) {
+                return $str.Substring(0, $width - 2) + "… "
+            }
+            return $str.PadRight($width)
+        }
+
+        Write-Host ""
+        Write-Host $header -ForegroundColor Cyan
+        Write-Host $separator -ForegroundColor DarkGray
+
+        foreach ($result in $entries) {
+            $color = Get-ActionColor $result.Action
+            $row   = ""
+            foreach ($col in $columns) {
+                $val  = if ($null -ne $result.($col.F)) { "$($result.($col.F))" } else { "" }
+                $row += Limit-String $val $col.W
+            }
+            Write-Host $row -ForegroundColor $color
+        }
+
         Write-Host ""
     }
 }
 
 # ----------------------------- #
-# Function 2 : Find-FirewallLog #
+# Function 3 : Find-FirewallLog #
 # ----------------------------- #
 function Find-FirewallLog {
     # enables -Verbose support
@@ -201,8 +377,210 @@ function Find-FirewallLog {
     
 }
 
+# ---------------------------------- #
+# Function 4 : Find-FirewallLogTable #
+# ---------------------------------- #
+function Find-FirewallLogTable {
+    [CmdletBinding()]
+    param (
+        # Path to the specified log file
+        [Parameter(Mandatory=$true)]
+        [Alias("P")]
+        [string]$FirewallLogPath,
+
+        # Filter results by source IP address
+        [Alias("Src")]
+        [string]$SourceIP,
+
+        # Filter results by destination IP address
+        [Alias("Dst")]
+        [string]$DestinationIP,
+
+        # Filter results by destination port number
+        [Alias("Port")]
+        [int]$DestinationPort,
+
+        # Filter results by username
+        [Alias("U")]
+        [string]$User,
+
+        # Filter results by firewall rule name
+        [Alias("Rule")]
+        [string]$RuleName,
+
+        # Limits the number of entries displayed (default: 200)
+        [Alias("L")]
+        [int]$Limit = 200,
+
+        # When this switch is used, results are displayed in a GridView window
+        # instead of being printed in the console as a table
+        [Alias("G")]
+        [switch]$GridView
+    )
+
+    Write-Verbose "Checking if log file exists..."
+
+    if (-not (Test-Path $FirewallLogPath)) {
+        Write-Error "This firewall log file is not found : $FirewallLogPath"
+        return
+    }
+
+    Write-Verbose "Parsing log entries..."
+
+    $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
+    $total = $lines.Count
+    $i = 0
+
+    $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
+    $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
+
+    $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+    foreach ($line in $lines) {
+        $i++
+        $percent = [math]::Round(($i / $total) * 100)
+        Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
+
+        $prefixMatch = $prefixRegex.Match($line)
+        if (-not $prefixMatch.Success) { continue }
+
+        $entry = [ordered]@{
+            Date   = $prefixMatch.Groups['Date'].Value
+            Time   = $prefixMatch.Groups['Time'].Value
+            Device = $prefixMatch.Groups['Device'].Value
+        }
+
+        foreach ($match in $kvRegex.Matches($line)) {
+            $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
+        }
+
+        $entries.Add([PSCustomObject]$entry)
+    }
+
+    Write-Progress -Activity "Fetching firewall logs..." -Completed
+
+    Write-Verbose "Applying filters..."
+
+    $results = $entries
+
+    if ($SourceIP) {
+        $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
+    }
+
+    if ($DestinationIP) {
+        $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
+    }
+
+    if ($DestinationPort) {
+        $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
+    }
+
+    if ($User) {
+        $results = $results | Where-Object { $_.user_name -eq $User }
+    }
+
+    if ($RuleName) {
+        $results = $results | Where-Object { $_.fw_rule_name -eq $RuleName }
+    }
+
+    Write-Verbose "Checking results..."
+
+    if (-not $results -or $results.Count -eq 0) {
+        Write-Host "No matching firewall log entries found for the specified filters." -ForegroundColor Yellow
+        return
+    }
+
+    # Select only the most relevant fields for the table
+    $table = $results | Select-Object -First $Limit | Select-Object `
+        @{N="Time";      E={$_.Time}},
+        @{N="Action";    E={$_.log_subtype}},
+        @{N="User";      E={$_.user_name}},
+        @{N="RuleName";  E={$_.fw_rule_name}},
+        @{N="SrcIP";     E={$_.src_ip}},
+        @{N="SrcPort";   E={$_.src_port}},
+        @{N="DstIP";     E={$_.dst_ip}},
+        @{N="DstPort";   E={$_.dst_port}},
+        @{N="Proto";     E={$_.protocol}},
+        @{N="App";       E={$_.app_name}},
+        @{N="SrcZone";   E={$_.src_zone}},
+        @{N="DstZone";   E={$_.dst_zone}},
+        @{N="SrcCtry";   E={$_.src_country}},
+        @{N="DstCtry";   E={$_.dst_country}},
+        @{N="BytesSent"; E={$_.bytes_sent}},
+        @{N="BytesRecv"; E={$_.bytes_received}}
+
+    Write-Host "$($results.Count) matching entries found — showing first $($table.Count)" -ForegroundColor Green
+
+    if ($GridView) {
+        # Display results in a separate GridView window
+        $table | Out-GridView -Title "Find-FirewallLogTable — $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
+    }
+    else {
+        # Display results as a colored console table
+
+        # Column definitions : header, field name, width
+        $columns = @(
+            @{ H = "Time";      F = "Time";      W = 10 }
+            @{ H = "Action";    F = "Action";    W = 9  }
+            @{ H = "User";      F = "User";      W = 14 }
+            @{ H = "Rule";      F = "RuleName";  W = 20 }
+            @{ H = "Src IP";    F = "SrcIP";     W = 16 }
+            @{ H = "Src Pt";    F = "SrcPort";   W = 7  }
+            @{ H = "Dst IP";    F = "DstIP";     W = 16 }
+            @{ H = "Dst Pt";    F = "DstPort";   W = 7  }
+            @{ H = "Proto";     F = "Proto";     W = 6  }
+            @{ H = "App";       F = "App";       W = 22 }
+            @{ H = "SrcZone";   F = "SrcZone";   W = 10 }
+            @{ H = "DstZone";   F = "DstZone";   W = 8  }
+            @{ H = "SrcCtry";   F = "SrcCtry";   W = 8  }
+            @{ H = "DstCtry";   F = "DstCtry";   W = 8  }
+            @{ H = "BytesSent"; F = "BytesSent"; W = 10 }
+            @{ H = "BytesRecv"; F = "BytesRecv"; W = 10 }
+        )
+
+        $header    = ""
+        $separator = ""
+        foreach ($col in $columns) {
+            $header    += $col.H.PadRight($col.W)
+            $separator += ('─' * ($col.W - 1)) + ' '
+        }
+
+        function Get-ActionColor($action) {
+            switch ($action) {
+                "Allowed" { return "Green" }
+                "Denied"  { return "Red"   }
+                "Drop"    { return "Red"   }
+                default   { return "White" }
+            }
+        }
+
+        function Limit-String($str, $width) {
+            if ($str.Length -gt ($width - 1)) {
+                return $str.Substring(0, $width - 2) + "… "
+            }
+            return $str.PadRight($width)
+        }
+
+        Write-Host ""
+        Write-Host $header -ForegroundColor Cyan
+        Write-Host $separator -ForegroundColor DarkGray
+
+        foreach ($result in $table) {
+            $color = Get-ActionColor $result.Action
+            $row   = ""
+            foreach ($col in $columns) {
+                $val  = if ($null -ne $result.($col.F)) { "$($result.($col.F))" } else { "" }
+                $row += Limit-String $val $col.W
+            }
+            Write-Host $row -ForegroundColor $color
+        }
+
+        Write-Host ""
+    }
+}
+
 # ---------------------------------------- #
-# Function 3 : Resolve-FirewallDestination #
+# Function 5 : Resolve-FirewallDestination #
 # ---------------------------------------- #
 function Resolve-FirewallDestination {
     [CmdletBinding()]
@@ -297,4 +675,4 @@ function Resolve-FirewallDestination {
 }
 
 # Export the Get-FirewallLog, Find-FirewallLog and Resolve-FirewallDestination functions
-Export-ModuleMember -Function Get-FirewallLog, Find-FirewallLog, Resolve-FirewallDestination
+Export-ModuleMember -Function Get-FirewallLog, Get-FirewallLogTable, Find-FirewallLog, Find-FirewallLogTable, Resolve-FirewallDestination
