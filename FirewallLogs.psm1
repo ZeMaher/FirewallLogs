@@ -1,14 +1,20 @@
-# Authors : Maher Gouja and Bryan Yu
+<#
+Authors: Maher Gouja & Bryan Yu
+Module Name: FirewallLogs
+Term: Winter 2026
+#>
 
 # ---------------------------- #
 # Function 1 : Get-FirewallLog #
 # ---------------------------- #
 function Get-FirewallLog {
     param (
+        # Path to the specified log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
 
+        # If mentioned in the Get-FirewallLog command, it displays all log entries
         [Alias("F")]
         [switch]$Full,
 
@@ -17,12 +23,14 @@ function Get-FirewallLog {
         [int]$Limit = 0
     )
 
+    # Condition that verifies if the specified firewall log file exists
+    # If it does not, an error message will be displayed with the name of the incorrect file path.
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
-    # Read all lines at once — much faster than Get-Content for large files
+    # Read all lines at once (much faster than Get-Content for large files)
     $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     $total = $lines.Count
     $i = 0
@@ -34,33 +42,48 @@ function Get-FirewallLog {
     # Collect all parsed entries first
     $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
 
+    # Parse each line of the specified firewall log file
     foreach ($line in $lines) {
+        
+        # Increment the progress counter
         $i++
 
         # Calculate the percentage of the progress
         $percent = [math]::Round(($i / $total) * 100)
+        
         # Display the progress of fetching and parsing the log entries in the firewall log file
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
+        # Variable to try to match the log prefix
         $prefixMatch = $prefixRegex.Match($line)
 
         # Skip lines that don't match the expected format
         if (-not $prefixMatch.Success) { continue }
 
+        # The $entry variable creates an ordered hashtable to store parsed fields.
+        # [ordered] makes sure that properties remain in a consistent display order.
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
             Time   = $prefixMatch.Groups['Time'].Value
             Device = $prefixMatch.Groups['Device'].Value
         }
 
+        # Extract all key=value pairs contained in the line
         foreach ($match in $kvRegex.Matches($line)) {
             $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
         }
 
+        # This 'if' statement determines which display format should be used.
         if ($Full) {
+            
+            # Displays all parsed fields
             $entries.Add([PSCustomObject]$entry)
+            
         }
+        
         else {
+
+            # Displays only minimal log fields
             $entries.Add([PSCustomObject]@{
                 Date     = $entry.Date
                 Time     = $entry.Time
@@ -76,13 +99,15 @@ function Get-FirewallLog {
             })
         }
 
-        # Stop parsing once we hit the limit — no point parsing the rest
+        # Stop parsing once we hit the limit (no point parsing the rest)
         if ($Limit -gt 0 -and $entries.Count -ge $Limit) { break }
+        
     }
 
     # Dismiss the progress bar before printing
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
+    # Informs the user on the number of entries being displayed
     Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
 
     # Find the longest property name for alignment (calculated once)
@@ -97,16 +122,18 @@ function Get-FirewallLog {
             Write-Host ": " -ForegroundColor DarkGray -NoNewline
             Write-Host "$($prop.Value)" -ForegroundColor White
         }
+        
         Write-Host $separator -ForegroundColor DarkGray
+        
     }
 }
 
 # --------------------------------- #
 # Function 2 : Get-FirewallLogTable #
 # --------------------------------- #
-
 function Get-FirewallLogTable {
     param (
+        # Path to the specified firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
@@ -121,28 +148,39 @@ function Get-FirewallLogTable {
         [switch]$GridView
     )
 
+    # Condition that verifies if the specified firewall log file exists
+    # If it does not, an error message will be displayed with the name of the incorrect file path.
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
-
+    # Read all the lines of the specified firewall log file
     $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     $total = $lines.Count
     $i = 0
 
+    # Pre-compile regex patterns for performance
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
     $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
 
+    # Iterate through each line in the firewall log file
     foreach ($line in $lines) {
         $i++
+
+        # Calculate the percentage of the progress
         $percent = [math]::Round(($i / $total) * 100)
+
+        # Display the process of parsing the log entries
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
         $prefixMatch = $prefixRegex.Match($line)
-        if (-not $prefixMatch.Success) { continue }
+        
+        if (-not $prefixMatch.Success) {
+            continue
+        }
 
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
@@ -185,6 +223,7 @@ function Get-FirewallLogTable {
         # Display results in a separate GridView window
         $entries | Out-GridView -Title "Get-FirewallLogTable — $FirewallLogPath ($($entries.Count) of $total entries)"
     }
+    
     else {
         # Display results as a colored console table
 
@@ -210,6 +249,7 @@ function Get-FirewallLogTable {
 
         $header    = ""
         $separator = ""
+        
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
             $separator += ('─' * ($col.W - 1)) + ' '
@@ -332,7 +372,7 @@ function Find-FirewallLog {
     Write-Verbose "Applying filters..."
     $results = $entries
 
-    #Loader end
+    # Loader end
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
     # If statement that applies the source IP address filter
@@ -427,6 +467,7 @@ function Find-FirewallLogTable {
 
     Write-Verbose "Parsing log entries..."
 
+    # Reads and stores all lines of a specified firewall log file in a variable called $lines
     $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     $total = $lines.Count
     $i = 0
@@ -436,13 +477,17 @@ function Find-FirewallLogTable {
 
     $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
 
+    # Parses each line of the specified firewall log file
     foreach ($line in $lines) {
         $i++
         $percent = [math]::Round(($i / $total) * 100)
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
         $prefixMatch = $prefixRegex.Match($line)
-        if (-not $prefixMatch.Success) { continue }
+        
+        if (-not $prefixMatch.Success) {
+            continue
+        }
 
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
@@ -463,22 +508,27 @@ function Find-FirewallLogTable {
 
     $results = $entries
 
+    # If statement that applies the source IP address filter
     if ($SourceIP) {
         $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
     }
 
+    # If statement that applies the destination IP address filter
     if ($DestinationIP) {
         $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
     }
 
+    # If statement that applies the destination port number filter
     if ($DestinationPort) {
         $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
     }
 
+    # Filter results by username
     if ($User) {
         $results = $results | Where-Object { $_.user_name -eq $User }
     }
 
+    # Filter results by firewall rule name
     if ($RuleName) {
         $results = $results | Where-Object { $_.fw_rule_name -eq $RuleName }
     }
@@ -515,6 +565,7 @@ function Find-FirewallLogTable {
         # Display results in a separate GridView window
         $table | Out-GridView -Title "Find-FirewallLogTable — $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
     }
+    
     else {
         # Display results as a colored console table
 
@@ -540,6 +591,7 @@ function Find-FirewallLogTable {
 
         $header    = ""
         $separator = ""
+        
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
             $separator += ('─' * ($col.W - 1)) + ' '
@@ -616,16 +668,20 @@ function Resolve-FirewallDestination {
 
         $line = $_
 
+        # Detect DNS replies containing a domain name and its resolved IP address
         if ($line -match 'reply\s+(?<Domain>\S+)\s+is\s+(?<IP>\d+\.\d+\.\d+\.\d+)') {
 
             $ip = $Matches.IP
             $domain = $Matches.Domain
 
+            # Condition statement to only add the IP address if it does not already
+            # exist in the DNS lookup table
             if (-not $dnsTable.ContainsKey($ip)) {
                 $dnsTable[$ip] = $domain
             }
         }
 
+        # Detect cached DNS entries that also map domain names to IP addresses
         elseif ($line -match 'cached\s+(?<Domain>\S+)\s+is\s+(?<IP>\d+\.\d+\.\d+\.\d+)') {
 
             $ip = $Matches.IP
@@ -640,6 +696,7 @@ function Resolve-FirewallDestination {
     # Read firewall log entries
     $lines = Get-Content $FirewallLogPath
 
+    # Iterate through each line of the specified firewall log file
     foreach ($line in $lines) {
 
         $prefixPattern = '^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
@@ -652,10 +709,13 @@ function Resolve-FirewallDestination {
         }
 
         $kvPattern = '(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
+        
+        # Iterate through each key=value pair contained in the line
         foreach ($match in [regex]::Matches($line, $kvPattern)) {
             $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
         }
 
+        # Destination IP extracted from a firewall log file
         $dstIP = $entry.dst_ip
         $domain = $null
 
@@ -674,5 +734,5 @@ function Resolve-FirewallDestination {
     
 }
 
-# Export the Get-FirewallLog, Find-FirewallLog and Resolve-FirewallDestination functions
+# Export the functions of the FirewallLog module so that they are available when the module is imported
 Export-ModuleMember -Function Get-FirewallLog, Get-FirewallLogTable, Find-FirewallLog, Find-FirewallLogTable, Resolve-FirewallDestination
