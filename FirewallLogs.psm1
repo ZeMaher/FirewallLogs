@@ -112,7 +112,7 @@ function Get-FirewallLog {
 
     # Find the longest property name for alignment (calculated once)
     $maxLen = ($entries[0].PSObject.Properties.Name | Measure-Object -Property Length -Maximum).Maximum
-    $separator = "  $('─' * ($maxLen + 20))"
+    $separator = "  $('-' * ($maxLen + 20))"
 
     # Display all entries
     foreach ($result in $entries) {
@@ -263,7 +263,7 @@ function Get-FirewallLogTable {
         # Iterate through each column to build the table header and separator
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
-            $separator += ('─' * ($col.W - 1)) + ' '
+            $separator += ('-' * ($col.W - 1)) + ' '
         }
 
         # Function to determine the colour of the row based on the action of the log
@@ -632,7 +632,7 @@ function Find-FirewallLogTable {
         # Iterate through each column to build the table header and separator
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
-            $separator += ('─' * ($col.W - 1)) + ' '
+            $separator += ('-' * ($col.W - 1)) + ' '
         }
 
         # Function to determine the colour of the row based on the action of the log
