@@ -155,7 +155,7 @@ function Get-FirewallLogTable {
         return
     }
 
-    # Read all the lines of the specified firewall log file
+    # Load all the lines of the specified firewall log file into memory
     $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     $total = $lines.Count
     $i = 0
@@ -164,6 +164,7 @@ function Get-FirewallLogTable {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
+    # List to store parsed entries
     $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Iterate through each line in the firewall log file
@@ -176,22 +177,28 @@ function Get-FirewallLogTable {
         # Display the process of parsing the log entries
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
+        # Try to match the prefix
         $prefixMatch = $prefixRegex.Match($line)
         
+        # Skip lines that do not match the expected format
         if (-not $prefixMatch.Success) {
             continue
         }
 
+        # The $entry variable creates an ordered hashtable to store parsed fields.
+        # [ordered] makes sure that properties remain in a consistent display order.
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
             Time   = $prefixMatch.Groups['Time'].Value
             Device = $prefixMatch.Groups['Device'].Value
         }
 
+        # Extract all key=value pairs from a line of a firewall log file
         foreach ($match in $kvRegex.Matches($line)) {
             $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
         }
 
+        # Add formatted PowerShell objects to the $entries variable
         $entries.Add([PSCustomObject]@{
             Time      = $entry.Time
             Action    = $entry.log_subtype
@@ -215,10 +222,13 @@ function Get-FirewallLogTable {
         if ($entries.Count -ge $Limit) { break }
     }
 
+    # End of progress bar after the process of fetching the firewall logs is completed
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
+    # Inform the user on the number of entries displayed
     Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
 
+    # Condition statement to choose the display format of the log entries
     if ($GridView) {
         # Display results in a separate GridView window
         $entries | Out-GridView -Title "Get-FirewallLogTable — $FirewallLogPath ($($entries.Count) of $total entries)"
@@ -250,11 +260,13 @@ function Get-FirewallLogTable {
         $header    = ""
         $separator = ""
         
+        # Iterate through each column to build the table header and separator
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
             $separator += ('─' * ($col.W - 1)) + ' '
         }
 
+        # Function to determine the colour of the row based on the action of the log
         function Get-ActionColor($action) {
             switch ($action) {
                 "Allowed" { return "Green" }
@@ -264,10 +276,13 @@ function Get-FirewallLogTable {
             }
         }
 
+        # Function to trim long strings to fit column width
         function Limit-String($str, $width) {
+            # If the string is too long, it will be truncated.
             if ($str.Length -gt ($width - 1)) {
                 return $str.Substring(0, $width - 2) + "… "
             }
+            # If the string is not too long, the right pad will match the width of the column.
             return $str.PadRight($width)
         }
 
@@ -275,13 +290,18 @@ function Get-FirewallLogTable {
         Write-Host $header -ForegroundColor Cyan
         Write-Host $separator -ForegroundColor DarkGray
 
+        # Print each row
         foreach ($result in $entries) {
             $color = Get-ActionColor $result.Action
             $row   = ""
+
+            # Build each row containing the strings column by column
             foreach ($col in $columns) {
+                # Handle null values
                 $val  = if ($null -ne $result.($col.F)) { "$($result.($col.F))" } else { "" }
                 $row += Limit-String $val $col.W
             }
+            # Output the row with the desired colour from the Get-ActionColor function
             Write-Host $row -ForegroundColor $color
         }
 
@@ -323,9 +343,11 @@ function Find-FirewallLog {
         [string]$RuleName
     )
 
-    # Verify that the specified log file exists
-    Write-Verbose "Checking if log file exists..."
+    # Inform the user that the firewall log file is being checked to see if it exists
+    Write-Verbose "Checking if the log file exists..."
     
+    # Validate that the specified firewall log file exists before reading and parsing it
+    # If it does not, an error message is shown with the name of the incorrect file path.
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
@@ -458,8 +480,10 @@ function Find-FirewallLogTable {
         [switch]$GridView
     )
 
-    Write-Verbose "Checking if log file exists..."
+    Write-Verbose "Checking if the log file exists..."
 
+    # Ensure that the firewall log file exists in your system before reading and parsing it
+    # If it does not, an error message is shown with the name of the incorrect file path.
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
@@ -472,36 +496,47 @@ function Find-FirewallLogTable {
     $total = $lines.Count
     $i = 0
 
+    # Pre-compile regex patterns
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
+    # Store parsed log entries in the $entries variable
     $entries = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Parses each line of the specified firewall log file
     foreach ($line in $lines) {
         $i++
         $percent = [math]::Round(($i / $total) * 100)
+
+        # Display the progress of parsing the log entries
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
+        # Attempt to match the structure of the prefix
         $prefixMatch = $prefixRegex.Match($line)
         
+        # Skip invalid lines
         if (-not $prefixMatch.Success) {
             continue
         }
 
+        # The $entry variable creates an ordered hashtable to store parsed fields.
+        # [ordered] makes sure that properties remain in a consistent display order.
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
             Time   = $prefixMatch.Groups['Time'].Value
             Device = $prefixMatch.Groups['Device'].Value
         }
 
+        # Extract all key=value pairs in a line
         foreach ($match in $kvRegex.Matches($line)) {
             $entry[$match.Groups['Key'].Value] = $match.Groups['Value'].Value
         }
 
+        # Store a parsed entry in the $entries variable
         $entries.Add([PSCustomObject]$entry)
     }
 
+    # Clear the progress bar after the parsing of the logs is completed
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
     Write-Verbose "Applying filters..."
@@ -535,6 +570,7 @@ function Find-FirewallLogTable {
 
     Write-Verbose "Checking results..."
 
+    # If there are no matching firewall log entries, the user will be notified.
     if (-not $results -or $results.Count -eq 0) {
         Write-Host "No matching firewall log entries found for the specified filters." -ForegroundColor Yellow
         return
@@ -559,8 +595,9 @@ function Find-FirewallLogTable {
         @{N="BytesSent"; E={$_.bytes_sent}},
         @{N="BytesRecv"; E={$_.bytes_received}}
 
-    Write-Host "$($results.Count) matching entries found — showing first $($table.Count)" -ForegroundColor Green
+    Write-Host "$($results.Count) matching entries found, showing first $($table.Count)" -ForegroundColor Green
 
+    # Selection of the output mode
     if ($GridView) {
         # Display results in a separate GridView window
         $table | Out-GridView -Title "Find-FirewallLogTable — $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
@@ -592,11 +629,13 @@ function Find-FirewallLogTable {
         $header    = ""
         $separator = ""
         
+        # Iterate through each column to build the table header and separator
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
             $separator += ('─' * ($col.W - 1)) + ' '
         }
 
+        # Function to determine the colour of the row based on the action of the log
         function Get-ActionColor($action) {
             switch ($action) {
                 "Allowed" { return "Green" }
@@ -606,10 +645,13 @@ function Find-FirewallLogTable {
             }
         }
 
+        # Function to trim long strings to fit column width
         function Limit-String($str, $width) {
+            # If the string is too long, it will be truncated.
             if ($str.Length -gt ($width - 1)) {
                 return $str.Substring(0, $width - 2) + "… "
             }
+            # If the string is not too long, the right pad will match the width of the column.
             return $str.PadRight($width)
         }
 
@@ -617,16 +659,19 @@ function Find-FirewallLogTable {
         Write-Host $header -ForegroundColor Cyan
         Write-Host $separator -ForegroundColor DarkGray
 
+        # Print each row
         foreach ($result in $table) {
             $color = Get-ActionColor $result.Action
             $row   = ""
+            # Build each row containing the strings column by column
             foreach ($col in $columns) {
+                # Handle null values
                 $val  = if ($null -ne $result.($col.F)) { "$($result.($col.F))" } else { "" }
                 $row += Limit-String $val $col.W
             }
             Write-Host $row -ForegroundColor $color
         }
-
+        # Output the row with the desired colour from the Get-ActionColor function
         Write-Host ""
     }
 }
@@ -666,6 +711,7 @@ function Resolve-FirewallDestination {
     # Read and parse the contents of the specified Pi-hole log file
     Get-Content $PiholeLogPath | ForEach-Object {
 
+        # A line from the Pi-hole log file
         $line = $_
 
         # Detect DNS replies containing a domain name and its resolved IP address
@@ -699,9 +745,12 @@ function Resolve-FirewallDestination {
     # Iterate through each line of the specified firewall log file
     foreach ($line in $lines) {
 
+        # Pre-compile regex patterns
         $prefixPattern = '^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
         $prefixMatch = [regex]::Match($line, $prefixPattern)
 
+        # The $entry variable creates an ordered hashtable to store parsed fields.
+        # [ordered] makes sure that properties remain in a consistent display order.
         $entry = [ordered]@{
             Date   = $prefixMatch.Groups['Date'].Value
             Time   = $prefixMatch.Groups['Time'].Value
