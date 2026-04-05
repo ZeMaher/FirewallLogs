@@ -218,7 +218,7 @@ function Get-FirewallLogTable {
             BytesRecv = $entry.bytes_received
         })
 
-        # Stop parsing once we hit the limit — no point parsing the rest
+        # Stop parsing once we hit the limit (no point parsing the rest)
         if ($entries.Count -ge $Limit) { break }
     }
 
@@ -231,7 +231,7 @@ function Get-FirewallLogTable {
     # Condition statement to choose the display format of the log entries
     if ($GridView) {
         # Display results in a separate GridView window
-        $entries | Out-GridView -Title "Get-FirewallLogTable — $FirewallLogPath ($($entries.Count) of $total entries)"
+        $entries | Out-GridView -Title "Get-FirewallLogTable - $FirewallLogPath ($($entries.Count) of $total entries)"
     }
     
     else {
@@ -600,7 +600,7 @@ function Find-FirewallLogTable {
     # Selection of the output mode
     if ($GridView) {
         # Display results in a separate GridView window
-        $table | Out-GridView -Title "Find-FirewallLogTable — $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
+        $table | Out-GridView -Title "Find-FirewallLogTable - $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
     }
     
     else {
