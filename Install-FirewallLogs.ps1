@@ -1,7 +1,7 @@
 # Install-FirewallLogs.ps1
 $repoUrl  = "https://github.com/ZeMaher/FirewllLogs.git"
 
-$repoUrl  = "https://github.com/<YourRepo>/FirewallLogs/archive/refs/heads/main.zip"
+$repoUrl  = "https://github.com/ZeMaher/FirewallLogs/archive/refs/heads/main.zip"
 $zipPath  = "$env:TEMP\FirewallLogs.zip"
 $modulesPath = "$env:USERPROFILE\Documents\PowerShell\Modules"
 $targetPath = Join-Path $modulesPath "FirewallLogs"
