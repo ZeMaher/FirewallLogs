@@ -22,7 +22,7 @@ function Get-FirewallLog {
         [int]$Limit = 0
     )
 
-    # Verify that the specified log file exists before attempting to read it
+    # Verify that the specified firewall log file exists before attempting to read it
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
@@ -36,6 +36,7 @@ function Get-FirewallLog {
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
+    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -115,7 +116,6 @@ function Get-FirewallLog {
 # --------------------------------- #
 # Function 2 : Get-FirewallLogTable #
 # --------------------------------- #
-
 function Get-FirewallLogTable {
     param (
         [Parameter(Mandatory=$true)]
@@ -141,6 +141,7 @@ function Get-FirewallLogTable {
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
+    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -208,6 +209,7 @@ function Get-FirewallLogTable {
         # Open results in a separate interactive GridView window
         $entries | Out-GridView -Title "Get-FirewallLogTable - $FirewallLogPath ($($entries.Count) of $total entries)"
     }
+    
     else {
         # Column definitions : header label, field name, column width
         $columns = @(
@@ -312,7 +314,8 @@ function Find-FirewallLog {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
-# Validate that each octet of the provided IP addresses is between 0 and 255
+    
+    # Validate that each octet of the provided source IP address is between 0 and 255
     if ($SourceIP) {
         $octets = $SourceIP.Split('.')
         foreach ($octet in $octets) {
@@ -323,6 +326,7 @@ function Find-FirewallLog {
         }
     }
 
+    # Validate that each octet of the provided destination IP address is between 0 and 255
     if ($DestinationIP) {
         $octets = $DestinationIP.Split('.')
         foreach ($octet in $octets) {
@@ -332,6 +336,7 @@ function Find-FirewallLog {
             }
         }
     }
+    
     Write-Verbose "Parsing log entries..."
 
     # Pre-compile regex patterns once for better performance across large log files
@@ -342,6 +347,7 @@ function Find-FirewallLog {
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
+    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -375,6 +381,7 @@ function Find-FirewallLog {
         }
 
         $entries.Add([PSCustomObject]$entry)
+        
     }
 
     Write-Progress -Activity "Fetching firewall logs..." -Completed
@@ -422,6 +429,7 @@ function Find-FirewallLog {
     Write-Host "$($results.Count) matching firewall log entries found." -ForegroundColor Green
 
     $results
+    
 }
 
 # ---------------------------------- #
@@ -471,7 +479,7 @@ function Find-FirewallLogTable {
         return
     }
 
-    # Validate that each octet of the provided IP addresses is between 0 and 255
+    # Validate that each octet of the provided source IP address is between 0 and 255
     if ($SourceIP) {
         $octets = $SourceIP.Split('.')
         foreach ($octet in $octets) {
@@ -482,6 +490,7 @@ function Find-FirewallLogTable {
         }
     }
 
+    # Validate that each octet of the provided destination IP address is between 0 and 255
     if ($DestinationIP) {
         $octets = $DestinationIP.Split('.')
         foreach ($octet in $octets) {
@@ -502,6 +511,7 @@ function Find-FirewallLogTable {
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
+    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -535,6 +545,7 @@ function Find-FirewallLogTable {
         }
 
         $entries.Add([PSCustomObject]$entry)
+        
     }
 
     Write-Progress -Activity "Fetching firewall logs..." -Completed
@@ -603,6 +614,7 @@ function Find-FirewallLogTable {
         # Open results in a separate interactive GridView window
         $table | Out-GridView -Title "Find-FirewallLogTable - $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
     }
+    
     else {
         # Column definitions : header label, field name, column width
         $columns = @(
@@ -666,6 +678,7 @@ function Find-FirewallLogTable {
         }
 
         Write-Host ""
+        
     }
 }
 
@@ -694,11 +707,13 @@ function Resolve-FirewallDestination {
         [int]$Limit = 0
     )
 
+    # Verify that the specified firewall log file exists before attempting to read it
     if (-not (Test-Path $FirewallLogPath)) {
         Write-Error "This firewall log file is not found : $FirewallLogPath"
         return
     }
 
+    # Verify that the specified Pi-hole log file exists before attempting to read it
     if (-not (Test-Path $PiholeLogPath)) {
         Write-Error "This Pihole log file is not found : $PiholeLogPath"
         return
@@ -720,6 +735,7 @@ function Resolve-FirewallDestination {
     try {
         $piholeLines = [System.IO.File]::ReadAllLines($PiholeLogPath)
     }
+    
     catch {
         Write-Error "Failed to read Pi-hole log file : $_"
         return
@@ -728,11 +744,13 @@ function Resolve-FirewallDestination {
     $total = $piholeLines.Count
     $i     = 0
 
+    # Iteration through each line of the specified Pi-hole log file
     foreach ($line in $piholeLines) {
         $i++
         $percent = [math]::Round(($i / $total) * 100)
         Write-Progress -Id 1 -Activity "Parsing Pi-hole log..." -Status "Reading entries ($i of $total)" -PercentComplete $percent
 
+        # Checks if the line in Pi-hole log file contains the domain and IP address
         if ($line -match 'reply\s+(?<Domain>\S+)\s+is\s+(?<IP>\d+\.\d+\.\d+\.\d+)') {
             $ip     = $Matches.IP
             $domain = $Matches.Domain
@@ -753,6 +771,7 @@ function Resolve-FirewallDestination {
     try {
         $fwLines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
+    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -762,6 +781,7 @@ function Resolve-FirewallDestination {
     $i         = 0
     $uniqueIPs = [System.Collections.Generic.HashSet[string]]::new()
 
+    # Iterate through each line of the specified firewall log file
     foreach ($line in $fwLines) {
         $i++
         $percent = [math]::Round(($i / $total) * 100)
@@ -786,6 +806,7 @@ function Resolve-FirewallDestination {
     $ipsToResolve = if ($DestinationIP) {
         @($DestinationIP)
     }
+    
     else {
         $ips = $uniqueIPs | Sort-Object
         if ($Limit -gt 0) { $ips | Select-Object -First $Limit } else { $ips }
@@ -794,6 +815,7 @@ function Resolve-FirewallDestination {
     $total = $ipsToResolve.Count
     $i     = 0
 
+    # Iterate through each IP address to resolve its domain name
     foreach ($ip in $ipsToResolve) {
         $i++
         $percent = [math]::Round(($i / $total) * 100)
@@ -808,6 +830,7 @@ function Resolve-FirewallDestination {
     }
 
     Write-Progress -Id 3 -Activity "Resolving destinations..." -Completed
+    
 }
 
 # Export the Get-FirewallLog, Get-FirewallLogTable, Find-FirewallLog, Find-FirewallLogTable, Resolve-FirewallDestination functions
