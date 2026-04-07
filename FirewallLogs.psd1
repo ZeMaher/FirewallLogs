@@ -69,7 +69,7 @@ Description = 'Module for managing firewall logs with parsing, filtering, and DN
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @("Get-FirewallLog", "Find-FirewallLog", "Resolve-FirewallDestination")
+FunctionsToExport = @("Get-FirewallLog", "Get-FirewallLogTable", "Find-FirewallLog", "Find-FirewallLogTable", "Resolve-FirewallDestination")
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
