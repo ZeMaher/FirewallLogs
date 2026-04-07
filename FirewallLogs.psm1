@@ -1,4 +1,8 @@
-# Authors : Maher Gouja and Bryan Yu
+<#
+Authors: Maher Gouja & Bryan Yu
+Module Name: FirewallLogs
+Term: Winter 2026
+#>
 
 # ---------------------------- #
 # Function 1 : Get-FirewallLog #
@@ -28,7 +32,7 @@ function Get-FirewallLog {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-    # Read all lines at once — faster than Get-Content for large files
+    # Read all lines at once - faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
@@ -93,7 +97,7 @@ function Get-FirewallLog {
 
     # Calculate the longest property name for column alignment
     $maxLen    = ($entries[0].PSObject.Properties.Name | Measure-Object -Property Length -Maximum).Maximum
-    $separator = "  $('─' * ($maxLen + 20))"
+    $separator = "  $('-' * ($maxLen + 20))"
 
     # Display each entry with aligned colored output
     foreach ($result in $entries) {
@@ -133,7 +137,7 @@ function Get-FirewallLogTable {
         return
     }
 
-    # Read all lines at once — faster than Get-Content for large files
+    # Read all lines at once - faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
@@ -202,7 +206,7 @@ function Get-FirewallLogTable {
 
     if ($GridView) {
         # Open results in a separate interactive GridView window
-        $entries | Out-GridView -Title "Get-FirewallLogTable — $FirewallLogPath ($($entries.Count) of $total entries)"
+        $entries | Out-GridView -Title "Get-FirewallLogTable - $FirewallLogPath ($($entries.Count) of $total entries)"
     }
     else {
         # Column definitions : header label, field name, column width
@@ -230,7 +234,7 @@ function Get-FirewallLogTable {
         $separator = ""
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
-            $separator += ('─' * ($col.W - 1)) + ' '
+            $separator += ('-' * ($col.W - 1)) + ' '
         }
 
         # Returns a color based on the firewall action
@@ -334,7 +338,7 @@ function Find-FirewallLog {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-    # Read all lines at once — faster than Get-Content for large files
+    # Read all lines at once - faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
@@ -396,12 +400,12 @@ function Find-FirewallLog {
         $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
     }
 
-    # Apply username filter if provided — field is user_name not user
+    # Apply username filter if provided - field is user_name not user
     if ($User) {
         $results = $results | Where-Object { $_.user_name -eq $User }
     }
 
-    # Apply rule name filter if provided — field is fw_rule_name not rule
+    # Apply rule name filter if provided - field is fw_rule_name not rule
     if ($RuleName) {
         $results = $results | Where-Object { $_.fw_rule_name -eq $RuleName }
     }
@@ -494,7 +498,7 @@ function Find-FirewallLogTable {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-    # Read all lines at once — faster than Get-Content for large files
+    # Read all lines at once -- faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
@@ -556,12 +560,12 @@ function Find-FirewallLogTable {
         $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
     }
 
-    # Apply username filter if provided — field is user_name not user
+    # Apply username filter if provided - field is user_name not user
     if ($User) {
         $results = $results | Where-Object { $_.user_name -eq $User }
     }
 
-    # Apply rule name filter if provided — field is fw_rule_name not rule
+    # Apply rule name filter if provided - field is fw_rule_name not rule
     if ($RuleName) {
         $results = $results | Where-Object { $_.fw_rule_name -eq $RuleName }
     }
@@ -593,11 +597,11 @@ function Find-FirewallLogTable {
         @{N="BytesSent"; E={$_.bytes_sent}},
         @{N="BytesRecv"; E={$_.bytes_received}}
 
-    Write-Host "$($results.Count) matching entries found — showing first $($table.Count)" -ForegroundColor Green
+    Write-Host "$($results.Count) matching entries found - showing first $($table.Count)" -ForegroundColor Green
 
     if ($GridView) {
         # Open results in a separate interactive GridView window
-        $table | Out-GridView -Title "Find-FirewallLogTable — $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
+        $table | Out-GridView -Title "Find-FirewallLogTable - $FirewallLogPath ($($table.Count) of $($results.Count) entries)"
     }
     else {
         # Column definitions : header label, field name, column width
@@ -625,7 +629,7 @@ function Find-FirewallLogTable {
         $separator = ""
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
-            $separator += ('─' * ($col.W - 1)) + ' '
+            $separator += ('-' * ($col.W - 1)) + ' '
         }
 
         # Returns a color based on the firewall action
@@ -709,8 +713,8 @@ function Resolve-FirewallDestination {
     # Hashtable used to map destination IPs to domain names
     $dnsTable = @{}
 
-    # ── Phase 1 : Parse Pi-hole log and build DNS lookup table ──────────────────────
-    # Only "reply <domain> is <IPv4>" lines are useful — CNAMEs and IPv6 are skipped.
+    # -- Phase 1 : Parse Pi-hole log and build DNS lookup table ----------------------
+    # Only "reply <domain> is <IPv4>" lines are useful - CNAMEs and IPv6 are skipped.
     # The first domain seen for each IP is kept; duplicates are ignored.
 
     try {
@@ -740,7 +744,7 @@ function Resolve-FirewallDestination {
 
     Write-Progress -Id 1 -Activity "Parsing Pi-hole log..." -Completed
 
-    # ── Phase 2 : Parse firewall log and collect unique destination IPs ──────────────
+    # -- Phase 2 : Parse firewall log and collect unique destination IPs --------------
     # A HashSet is used to automatically deduplicate IPs across all log lines.
 
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
@@ -777,7 +781,7 @@ function Resolve-FirewallDestination {
 
     Write-Progress -Id 2 -Activity "Parsing firewall log..." -Completed
 
-    # ── Phase 3 : Resolve each unique destination IP against the DNS table ───────────
+    # -- Phase 3 : Resolve each unique destination IP against the DNS table -----------
 
     $ipsToResolve = if ($DestinationIP) {
         @($DestinationIP)
