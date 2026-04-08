@@ -1,5 +1,5 @@
 FirewllLogs
-A PowerShell module for parsing, filtering, and analyzing firewall logs. Includes functions to read logs, apply filters (IP, port, user, rule), and resolve destination IPs to domain names using Pi-hole logs.
+A ```powershell module for parsing, filtering, and analyzing firewall logs. Includes functions to read logs, apply filters (IP, port, user, rule), and resolve destination IPs to domain names using Pi-hole logs.
 
 ---
 
@@ -8,8 +8,9 @@ A PowerShell module for parsing, filtering, and analyzing firewall logs. Include
 ### Option 1 - Automatic (recommended)
 
 Download and run the included installer script:
-powershell
+```powershell
 .\Install-FirewallLogs.ps1
+```
    
 
 This script will automatically download the latest version from GitHub, extract it into your PowerShell Modules folder, and import the module.
@@ -21,30 +22,31 @@ This script will automatically download the latest version from GitHub, extract 
 1. Open a PowerShell terminal
 
 2. Clone the repository:
-powershell
+```powershell
 git clone https://github.com/ZeMaher/FirewallLogs.git
 ```
 
 
 3. Copy the  FirewallLogs  folder into your PowerShell Modules path:
-powershell
+```powershell
 # To find your modules path run:
 $env:PSModulePath -split ';'
+```
 
 Common locations:
 - User scope:  C:\Users\<User>\Documents\PowerShell\Modules\FirewallLogs 
 - System scope:  C:\Program Files\PowerShell\Modules\FirewallLogs 
 
 4. Import the module:
-powershell
+```powershell
 Import-Module FirewallLogs
 ```
 
 
 5. Verify the installation:
-powershell
+```powershell
 Get-Module -ListAvailable FirewallLogs
-
+```
 
 ## Functions
 
@@ -60,13 +62,13 @@ Parses a firewall log file and displays each entry in a detailed vertical format
 |  Limit            |  -L   | int    | No       | 0 (all) | Maximum number of entries to display                        |
 
 **Examples**
-powershell
+```powershell
 # Display the first 50 entries
 Get-FirewallLog -P "C:\logs\fw.log" -L 50
 
 # Display all fields for the first 10 entries
 Get-FirewallLog -P "C:\logs\fw.log" -F -L 10
-   
+```   
 
 ---
 
@@ -82,13 +84,13 @@ Parses a firewall log file and displays entries as a compact color-coded table. 
 |  GridView         |  -G   | switch | No       | Off     | Display results in an interactive GridView window instead of the console |
 
 **Examples**
-powershell
+```powershell
 # Display the first 200 entries as a table
 Get-FirewallLogTable -P "C:\logs\fw.log"
 
 # Display the first 500 entries in GridView
 Get-FirewallLogTable -P "C:\logs\fw.log" -L 500 -G
-   
+```   
 
 ---
 
@@ -109,7 +111,7 @@ Parses a firewall log file and filters entries based on one or more criteria. Re
 > IP addresses are validated - each octet must be between 0 and 255.
 
 **Examples**
-powershell
+```powershell
 # Filter by source IP
 Find-FirewallLog -P "C:\logs\fw.log" -Src "10.1.120.5"
 
@@ -118,7 +120,7 @@ Find-FirewallLog -P "C:\logs\fw.log" -U "barney" -Port 443
 
 # Filter by rule name
 Find-FirewallLog -P "C:\logs\fw.log" -Rule "Web Browsing"
-   
+```   
 
 ---
 
@@ -141,7 +143,7 @@ Same filtering capabilities as  Find-FirewallLog  but displays results as a colo
 > IP addresses are validated - each octet must be between 0 and 255.
 
 **Examples**
-powershell
+```powershell
 # Filter by destination port, display as table
 Find-FirewallLogTable -P "C:\logs\fw.log" -Port 443
 
@@ -150,7 +152,7 @@ Find-FirewallLogTable -P "C:\logs\fw.log" -U "barney" -G
 
 # Filter by source IP and rule, limit to 100 results
 Find-FirewallLogTable -P "C:\logs\fw.log" -Src "10.1.120.5" -Rule "Web Browsing" -L 100
-   
+```   
 
 ---
 
@@ -169,7 +171,7 @@ Cross-references destination IPs from a firewall log against a Pi-hole DNS log t
 >  -Limit  and  -Dst  are mutually exclusive. Using both together will return an error.
 
 **Examples**
-powershell
+```powershell
 # Resolve all unique destination IPs
 Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log"
 
@@ -178,7 +180,7 @@ Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log" -Dst "
 
 # Resolve the first 50 unique destination IPs
 Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log" -L 50
-   
+```   
 
 ---
 
