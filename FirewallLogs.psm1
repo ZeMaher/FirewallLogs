@@ -252,7 +252,7 @@ function Get-FirewallLogTable {
         # Truncates a string to fit within the column width
         function Limit-String($str, $width) {
             if ($str.Length -gt ($width - 1)) {
-                return $str.Substring(0, $width - 2) + "… "
+                return $str.Substring(0, $width - 2) + "... "
             }
             return $str.PadRight($width)
         }
@@ -657,7 +657,7 @@ function Find-FirewallLogTable {
         # Truncates a string to fit within the column width
         function Limit-String($str, $width) {
             if ($str.Length -gt ($width - 1)) {
-                return $str.Substring(0, $width - 2) + "… "
+                return $str.Substring(0, $width - 2) + "... "
             }
             return $str.PadRight($width)
         }
