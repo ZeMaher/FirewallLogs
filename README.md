@@ -1,5 +1,5 @@
 # FirewallLogs
-A powershell module for parsing, filtering, and analyzing firewall logs. Includes functions to read logs, apply filters (IP, port, user, rule), and resolve destination IPs to domain names using Pi-hole logs.
+A PowerShell module for parsing, filtering, and analyzing firewall logs. It includes functions to read logs, apply filters (IP, port, user, rule), and resolve destination IPs to domain names using Pi-hole logs.
 
 ---
 
@@ -11,7 +11,6 @@ Download and run the included installer script:
 ```powershell
 .\Install-FirewallLogs.ps1
 ```
-   
 
 This script will automatically download the latest version from GitHub, extract it into your PowerShell Modules folder, and import the module.
 
@@ -26,22 +25,20 @@ This script will automatically download the latest version from GitHub, extract 
 git clone https://github.com/ZeMaher/FirewallLogs.git
 ```
 
-
-3. Copy the  FirewallLogs  folder into your PowerShell Modules path:
+3. Copy the `FirewallLogs` folder into your PowerShell Modules path:
 ```powershell
-# To find your modules path run:
+# To find your modules path, run the following command:
 $env:PSModulePath -split ';'
 ```
 
 Common locations:
-- User scope:  C:\Users\<User>\Documents\PowerShell\Modules\FirewallLogs 
-- System scope:  C:\Program Files\PowerShell\Modules\FirewallLogs 
+- User scope: `C:\Users\<User>\Documents\PowerShell\Modules\FirewallLogs`
+- System scope: `C:\Program Files\PowerShell\Modules\FirewallLogs`
 
 4. Import the module:
 ```powershell
 Import-Module FirewallLogs
 ```
-
 
 5. Verify the installation:
 ```powershell
@@ -72,7 +69,7 @@ Get-FirewallLog -P "C:\logs\fw.log" -F -L 10
 
 ---
 
-### 2.  Get-FirewallLogTable 
+### 2. Get-FirewallLogTable 
 Parses a firewall log file and displays entries as a compact color-coded table. Rows are colored green for allowed traffic and red for denied/dropped traffic.
 
 **Parameters**
@@ -124,14 +121,14 @@ Find-FirewallLog -P "C:\logs\fw.log" -Rule "Web Browsing"
 
 ---
 
-### 4.  Find-FirewallLogTable 
+### 4. Find-FirewallLogTable
 Same filtering capabilities as  Find-FirewallLog  but displays results as a color-coded table instead of raw objects. Supports both console and GridView output.
 
 **Parameters**
 
 | Parameter         | Alias | Type   | Required | Default | Description                                       |
 |-------------------|-------|--------|----------|---------|---------------------------------------------------|
-|  FirewallLogPath  | -P    | string | Yes      |    -    || Path to the firewall log file                    |
+|  FirewallLogPath  | -P    | string | Yes      |    -    | Path to the firewall log file                     |
 |  SourceIP         | -Src  | string | No       |    -    | Filter by source IP address                       |
 |  DestinationIP    | -Dst  | string | No       |    -    | Filter by destination IP address                  |
 |  DestinationPort  | -Port | int    | No       |    -    | Filter by destination port number                 |
@@ -152,7 +149,7 @@ Find-FirewallLogTable -P "C:\logs\fw.log" -U "barney" -G
 
 # Filter by source IP and rule, limit to 100 results
 Find-FirewallLogTable -P "C:\logs\fw.log" -Src "10.1.120.5" -Rule "Web Browsing" -L 100
-```   
+```
 
 ---
 
@@ -168,7 +165,7 @@ Cross-references destination IPs from a firewall log against a Pi-hole DNS log t
 |  DestinationIP    |  -Dst  | string | No       |    -    | Resolve only this specific destination IP                     |
 |  Limit            |  -L    | int    | No       | 0 (all) | Maximum number of IPs to resolve - cannot be used with  -Dst  |
 
->  -Limit  and  -Dst  are mutually exclusive. Using both together will return an error.
+> `-Limit` and `-Dst` are mutually exclusive. Using both together will return an error.
 
 **Examples**
 ```powershell
@@ -180,7 +177,7 @@ Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log" -Dst "
 
 # Resolve the first 50 unique destination IPs
 Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log" -L 50
-```   
+```
 
 ---
 
@@ -188,25 +185,25 @@ Resolve-FirewallDestination -P "C:\logs\fw.log" -DNS "C:\logs\pihole.log" -L 50
 
 The module expects firewall logs in the following format:
    
-2026-01-29 00:00:11 cr431-firewall [info] key1="value1" key2="value2" ...
-   
+`2026-01-29 00:00:11 cr431-firewall [info] key1="value1" key2="value2" ...`
 
 Pi-hole logs must be in the standard dnsmasq format:
    
-Jan 29 00:00:05 dnsmasq[2401431]: UDP 2276827 10.1.5.14/60439 reply api.weather.com is 1.2.3.4
-   
+`Jan 29 00:00:05 dnsmasq[2401431]: UDP 2276827 10.1.5.14/60439 reply api.weather.com is 1.2.3.4`
 
 ---
 
 ## Notes
 
-- All functions use  [System.IO.File]::ReadAllLines()  for fast file reading, significantly faster than  Get-Content  for large log files.
+- All functions use `[System.IO.File]::ReadAllLines()` for fast file reading, significantly faster than Get-Content for large log files.
 - Progress bars are displayed during parsing phases and dismissed automatically before results are printed.
-- The  -GridView  option requires Windows PowerShell or the  Microsoft.PowerShell.GraphicalTools  module on PowerShell 7.
-- For log files with 50,000+ entries, always use  -Limit  or  -GridView  to avoid console buffer limitations.
+- The `-GridView` option requires `Windows PowerShell` or the `Microsoft.PowerShell.GraphicalTools` module on PowerShell 7.
+- For log files with 50,000+ entries, always use `-Limit` or `-GridView` to avoid console buffer limitations.
 
 ---
 
 ## Authors
+- [Maher Gouja](https://github.com/ZeMaher)
+- [Bryan Yu](https://github.com/pandathetech)
 
-Maher Gouja & Bryan Yu - Polytechnique Montréal, Winter 2026
+Polytechnique Montréal (Winter 2026)
