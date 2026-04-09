@@ -333,6 +333,9 @@ function Find-FirewallLog {
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
     
+        # If the provided source IP address does not match the IPv4 pattern,
+        # an error message will be shown to the user and the execution of the
+        # command will stop.
         if ($SourceIP -notmatch $ipv4Regex) {
             Write-Error "Invalid source IP address: $SourceIP. Must be a valid IPv4 address (e.g., 192.168.1.10)."
             return
@@ -346,6 +349,9 @@ function Find-FirewallLog {
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
     
+        # If the provided destination IP address does not match the IPv4 pattern,
+        # an error message will be shown to the user and the execution of the
+        # command will stop.
         if ($DestinationIP -notmatch $ipv4Regex) {
             Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
             return
@@ -479,6 +485,9 @@ function Find-FirewallLogTable {
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
     
+        # If the provided source IP address does not match the IPv4 pattern,
+        # an error message will be shown to the user and the execution of the
+        # command will stop.
         if ($SourceIP -notmatch $ipv4Regex) {
             Write-Error "Invalid source IP address: $SourceIP. Must be a valid IPv4 address (e.g., 192.168.1.10)."
             return
@@ -492,6 +501,9 @@ function Find-FirewallLogTable {
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
                      '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
     
+        # If the provided destination IP address does not match the IPv4 pattern,
+        # an error message will be shown to the user and the execution of the
+        # command will stop.
         if ($DestinationIP -notmatch $ipv4Regex) {
             Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
             return
@@ -731,6 +743,9 @@ function Resolve-FirewallDestination {
                  '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
                  '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
 
+        # If the provided destination IP address does not match the IPv4 pattern,
+        # an error message will be shown to the user and the execution of the
+        # command will stop.
         if ($DestinationIP -notmatch $ipv4Regex) {
             Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
             return
