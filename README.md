@@ -57,7 +57,7 @@ Parses a firewall log file and displays each entry in a detailed vertical format
 
 | Parameter         | Alias | Type   | Required | Default | Description                                                 |
 |-------------------|-------|--------|----------|---------|-------------------------------------------------------------|
-|  FirewallLogPath  |  -P   | string | Yes      |    —    | Path to the firewall log file                               |
+|  FirewallLogPath  |  -P   | string | Yes      |    -    | Path to the firewall log file                               |
 |  Full             |  -F   | switch | No       | Off     | Return all parsed fields instead of the default minimal set |
 |  Limit            |  -L   | int    | No       | 0 (all) | Maximum number of entries to display                        |
 
@@ -79,7 +79,7 @@ Parses a firewall log file and displays entries as a compact color-coded table. 
 
 | Parameter         | Alias | Type   | Required | Default | Description                                                              |
 |-------------------|-------|--------|----------|---------|--------------------------------------------------------------------------|
-|  FirewallLogPath  |  -P   | string | Yes      |    —    | Path to the firewall log file                                            |
+|  FirewallLogPath  |  -P   | string | Yes      |    -    | Path to the firewall log file                                            |
 |  Limit            |  -L   | int    | No       | 200     | Maximum number of entries to display                                     |
 |  GridView         |  -G   | switch | No       | Off     | Display results in an interactive GridView window instead of the console |
 
@@ -101,12 +101,12 @@ Parses a firewall log file and filters entries based on one or more criteria. Re
 
 | Parameter         | Alias | Type   | Required | Default | Description                      |
 |-------------------|-------|--------|----------|---------|----------------------------------|
-|  FirewallLogPath  | -P    | string | Yes      |    —    | Path to the firewall log file    |
-|  SourceIP         | -Src  | string | No       |    —    | Filter by source IP address      |
-|  DestinationIP    | -Dst  | string | No       |    —    | Filter by destination IP address |
-|  DestinationPort  | -Port | int    | No       |    —    | Filter by destination port number|
-|  User             | -U    | string | No       |    —    | Filter by username               |
-|  RuleName         | -Rule | string | No       |    —    | Filter by firewall rule name     |
+|  FirewallLogPath  | -P    | string | Yes      |    -    | Path to the firewall log file    |
+|  SourceIP         | -Src  | string | No       |    -    | Filter by source IP address      |
+|  DestinationIP    | -Dst  | string | No       |    -    | Filter by destination IP address |
+|  DestinationPort  | -Port | int    | No       |    -    | Filter by destination port number|
+|  User             | -U    | string | No       |    -    | Filter by username               |
+|  RuleName         | -Rule | string | No       |    -    | Filter by firewall rule name     |
 
 > IP addresses are validated - each octet must be between 0 and 255.
 
@@ -131,12 +131,12 @@ Same filtering capabilities as  Find-FirewallLog  but displays results as a colo
 
 | Parameter         | Alias | Type   | Required | Default | Description                                       |
 |-------------------|-------|--------|----------|---------|---------------------------------------------------|
-|  FirewallLogPath  | -P    | string | Yes      |    —    || Path to the firewall log file                    |
-|  SourceIP         | -Src  | string | No       |    —    | Filter by source IP address                       |
-|  DestinationIP    | -Dst  | string | No       |    —    | Filter by destination IP address                  |
-|  DestinationPort  | -Port | int    | No       |    —    | Filter by destination port number                 |
-|  User             | -U    | string | No       |    —    | Filter by username                                |
-|  RuleName         | -Rule | string | No       |    —    | Filter by firewall rule name                      |
+|  FirewallLogPath  | -P    | string | Yes      |    -    || Path to the firewall log file                    |
+|  SourceIP         | -Src  | string | No       |    -    | Filter by source IP address                       |
+|  DestinationIP    | -Dst  | string | No       |    -    | Filter by destination IP address                  |
+|  DestinationPort  | -Port | int    | No       |    -    | Filter by destination port number                 |
+|  User             | -U    | string | No       |    -    | Filter by username                                |
+|  RuleName         | -Rule | string | No       |    -    | Filter by firewall rule name                      |
 |  Limit            | -L    | int    | No       | 200     | Maximum number of entries to display              |
 |  GridView         | -G    | switch | No       | Off     | Display results in an interactive GridView window |
 
@@ -163,9 +163,9 @@ Cross-references destination IPs from a firewall log against a Pi-hole DNS log t
 
 | Parameter         | Alias  | Type   | Required | Default | Description                                                   |
 |-------------------|--------|--------|----------|---------|---------------------------------------------------------------|
-|  FirewallLogPath  |  -P    | string | Yes      |    —    | Path to the firewall log file                                 |
-|  PiholeLogPath    |  -DNS  | string | Yes      |    —    | Path to the Pi-hole log file                                  |
-|  DestinationIP    |  -Dst  | string | No       |    —    | Resolve only this specific destination IP                     |
+|  FirewallLogPath  |  -P    | string | Yes      |    -    | Path to the firewall log file                                 |
+|  PiholeLogPath    |  -DNS  | string | Yes      |    -    | Path to the Pi-hole log file                                  |
+|  DestinationIP    |  -Dst  | string | No       |    -    | Resolve only this specific destination IP                     |
 |  Limit            |  -L    | int    | No       | 0 (all) | Maximum number of IPs to resolve - cannot be used with  -Dst  |
 
 >  -Limit  and  -Dst  are mutually exclusive. Using both together will return an error.
