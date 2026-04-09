@@ -326,27 +326,31 @@ function Find-FirewallLog {
         return
     }
     
-    # Validate that each octet of the provided source IP address is between 0 and 255
-    if ($SourceIP) {
-        $octets = $SourceIP.Split('.')
-        foreach ($octet in $octets) {
-            if ([int]$octet -lt 0 -or [int]$octet -gt 255) {
-                Write-Error "Invalid source IP address : $SourceIP. Each octet must be between 0 and 255."
-                return
-            }
-        }
-    }
+        # Validate Source IP
+if ($SourceIP) {
+    $ipv4Regex = '^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
 
-    # Validate that each octet of the provided destination IP address is between 0 and 255
-    if ($DestinationIP) {
-        $octets = $DestinationIP.Split('.')
-        foreach ($octet in $octets) {
-            if ([int]$octet -lt 0 -or [int]$octet -gt 255) {
-                Write-Error "Invalid destination IP address : $DestinationIP. Each octet must be between 0 and 255."
-                return
-            }
-        }
+    if ($SourceIP -notmatch $ipv4Regex) {
+        Write-Error "Invalid source IP address: $SourceIP. Must be a valid IPv4 address (e.g., 192.168.1.10)."
+        return
     }
+}
+
+# Validate Destination IP
+if ($DestinationIP) {
+    $ipv4Regex = '^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
+
+    if ($DestinationIP -notmatch $ipv4Regex) {
+        Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
+        return
+    }
+}
     
     Write-Verbose "Parsing log entries..."
 
@@ -354,11 +358,10 @@ function Find-FirewallLog {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-    # Read all lines at once - faster than Get-Content for large files
+    # Read all lines at once — faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
-    
     catch {
         Write-Error "Failed to read firewall log file : $_"
         return
@@ -392,40 +395,19 @@ function Find-FirewallLog {
         }
 
         $entries.Add([PSCustomObject]$entry)
-        
     }
 
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
     Write-Verbose "Applying filters..."
 
-    # Start with the full list and narrow it down based on whichever
-    # filter parameters were provided by the user
-    $results = $entries
-
-    # Apply source IP filter if provided
-    if ($SourceIP) {
-        $results = $results | Where-Object { $_.src_ip -eq $SourceIP }
-    }
-
-    # Apply destination IP filter if provided
-    if ($DestinationIP) {
-        $results = $results | Where-Object { $_.dst_ip -eq $DestinationIP }
-    }
-
-    # Apply destination port filter if provided
-    if ($DestinationPort) {
-        $results = $results | Where-Object { $_.dst_port -eq $DestinationPort }
-    }
-
-    # Apply username filter if provided - field is user_name not user
-    if ($User) {
-        $results = $results | Where-Object { $_.user_name -eq $User }
-    }
-
-    # Apply rule name filter if provided - field is fw_rule_name not rule
-    if ($RuleName) {
-        $results = $results | Where-Object { $_.fw_rule_name -eq $RuleName }
+    # Apply all filters in a single Where-Object to preserve collection type and Count
+    $results = $entries | Where-Object {
+        (-not $SourceIP      -or $_.src_ip       -eq $SourceIP)      -and
+        (-not $DestinationIP -or $_.dst_ip        -eq $DestinationIP) -and
+        (-not $DestinationPort -or $_.dst_port    -eq $DestinationPort) -and
+        (-not $User          -or $_.user_name     -eq $User)          -and
+        (-not $RuleName      -or $_.fw_rule_name  -eq $RuleName)
     }
 
     Write-Verbose "Checking results..."
@@ -437,10 +419,8 @@ function Find-FirewallLog {
     }
 
     # Display the number of matching entries and output the results
-    Write-Host "$($results.Count) matching firewall log entries found." -ForegroundColor Green
-
-    $results
-    
+   Write-Host "$($results.Count) matching firewall log entries found." -ForegroundColor Green
+return $results
 }
 
 # ---------------------------------- #
@@ -491,27 +471,31 @@ function Find-FirewallLogTable {
         return
     }
 
-    # Validate that each octet of the provided source IP address is between 0 and 255
-    if ($SourceIP) {
-        $octets = $SourceIP.Split('.')
-        foreach ($octet in $octets) {
-            if ([int]$octet -lt 0 -or [int]$octet -gt 255) {
-                Write-Error "Invalid source IP address : $SourceIP. Each octet must be between 0 and 255."
-                return
-            }
-        }
-    }
+        # Validate Source IP
+if ($SourceIP) {
+    $ipv4Regex = '^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
 
-    # Validate that each octet of the provided destination IP address is between 0 and 255
-    if ($DestinationIP) {
-        $octets = $DestinationIP.Split('.')
-        foreach ($octet in $octets) {
-            if ([int]$octet -lt 0 -or [int]$octet -gt 255) {
-                Write-Error "Invalid destination IP address : $DestinationIP. Each octet must be between 0 and 255."
-                return
-            }
-        }
+    if ($SourceIP -notmatch $ipv4Regex) {
+        Write-Error "Invalid source IP address: $SourceIP. Must be a valid IPv4 address (e.g., 192.168.1.10)."
+        return
     }
+}
+
+# Validate Destination IP
+if ($DestinationIP) {
+    $ipv4Regex = '^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
+
+    if ($DestinationIP -notmatch $ipv4Regex) {
+        Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
+        return
+    }
+}
 
     Write-Verbose "Parsing log entries..."
 
@@ -737,6 +721,19 @@ function Resolve-FirewallDestination {
     if ($DestinationIP -and $Limit -gt 0) {
         Write-Error "-Limit and -Dst cannot be used together. -Limit applies only when no destination IP is specified."
         return
+    }
+
+    # Validate Destination IP
+    if ($DestinationIP) {
+        $ipv4Regex = '^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.' +
+                 '(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
+
+    if ($DestinationIP -notmatch $ipv4Regex) {
+        Write-Error "Invalid destination IP address: $DestinationIP. Must be a valid IPv4 address (e.g., 10.0.0.5)."
+        return
+        }
     }
 
     # Hashtable used to map destination IPs to domain names
