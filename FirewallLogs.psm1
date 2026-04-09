@@ -519,7 +519,7 @@ function Find-FirewallLogTable {
     $prefixRegex = [regex]'^(?<Date>\S+)\s+(?<Time>\S+)\s+(?<Device>\S+)\s+\[info\]'
     $kvRegex     = [regex]'(?<Key>\w+)=("(?<Value>[^"]+)"|(?<Value>\S+))'
 
-    # Read all lines at once -- faster than Get-Content for large files
+    # Read all lines at once - faster than Get-Content for large files
     try {
         $lines = [System.IO.File]::ReadAllLines($FirewallLogPath)
     }
