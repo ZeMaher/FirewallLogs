@@ -1,6 +1,6 @@
 <#
 Authors: Maher Gouja & Bryan Yu
-Module Name: FirewallLogs
+Module: FirewallLogs
 Term: Winter 2026
 #>
 
@@ -9,6 +9,7 @@ Term: Winter 2026
 # ---------------------------- #
 function Get-FirewallLog {
     param (
+        # Path to the firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
@@ -52,6 +53,7 @@ function Get-FirewallLog {
         $percent = [math]::Round(($i / $total) * 100)
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
+        # Skip lines that do not match the required format
         $prefixMatch = $prefixRegex.Match($line)
         if (-not $prefixMatch.Success) { continue }
 
@@ -94,6 +96,8 @@ function Get-FirewallLog {
 
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
+    # Output the number of total entries being displayed
+    # The text output is in green.
     Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
 
     # Calculate the longest property name for column alignment
@@ -118,6 +122,7 @@ function Get-FirewallLog {
 # --------------------------------- #
 function Get-FirewallLogTable {
     param (
+        # Path to the firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
@@ -162,6 +167,7 @@ function Get-FirewallLogTable {
         $percent = [math]::Round(($i / $total) * 100)
         Write-Progress -Activity "Fetching firewall logs..." -Status "Parsing entries ($i of $total)" -PercentComplete $percent
 
+        # Skip lines that do not match the required format
         $prefixMatch = $prefixRegex.Match($line)
         if (-not $prefixMatch.Success) { continue }
 
@@ -203,6 +209,8 @@ function Get-FirewallLogTable {
 
     Write-Progress -Activity "Fetching firewall logs..." -Completed
 
+    # Output the number of total entries being displayed
+    # The text output is in green.
     Write-Host "Showing $($entries.Count) of $total entries" -ForegroundColor Green
 
     if ($GridView) {
@@ -234,6 +242,8 @@ function Get-FirewallLogTable {
         # Build the header and separator lines from column definitions
         $header    = ""
         $separator = ""
+
+        # Iterate through each column of the table
         foreach ($col in $columns) {
             $header    += $col.H.PadRight($col.W)
             $separator += ('-' * ($col.W - 1)) + ' '
@@ -282,6 +292,7 @@ function Get-FirewallLogTable {
 function Find-FirewallLog {
     [CmdletBinding()]
     param (
+        # Path to the firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
@@ -438,6 +449,7 @@ function Find-FirewallLog {
 function Find-FirewallLogTable {
     [CmdletBinding()]
     param (
+        # Path to the firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
@@ -688,10 +700,12 @@ function Find-FirewallLogTable {
 function Resolve-FirewallDestination {
     [CmdletBinding()]
     param (
+        # Path to the firewall log file
         [Parameter(Mandatory=$true)]
         [Alias("P")]
         [string]$FirewallLogPath,
 
+        # Path to the Pi-hole log file
         [Parameter(Mandatory=$true)]
         [Alias("DNS")]
         [string]$PiholeLogPath,
@@ -787,6 +801,7 @@ function Resolve-FirewallDestination {
         $percent = [math]::Round(($i / $total) * 100)
         Write-Progress -Id 2 -Activity "Parsing firewall log..." -Status "Reading entries ($i of $total)" -PercentComplete $percent
 
+        # Skip lines that do not match the required format
         $prefixMatch = $prefixRegex.Match($line)
         if (-not $prefixMatch.Success) { continue }
 
